@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vintage Photobooth</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
+            font-family: 'Bebas Neue', sans-serif;
+            color: #e0e0e0;
+        }
+
+        h1 {
+            font-size: clamp(28px, 8vw, 42px);
+            color: #c9a961;
+            text-align: center;
+            margin: 0 0 20px 0;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        #videoContainer {
+            text-align: center;
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow:
+                inset 0 0 50px rgba(0, 0, 0, 0.8),
+                0 10px 40px rgba(0, 0, 0, 0.7);
+            border: 3px solid #444;
+            max-width: 90vw;
+        }
+
+        #webcam {
+            width: 100%;
+            max-width: 480px;
+            height: auto;
+            aspect-ratio: 3 / 4;
+            background-color: #000;
+            border: 8px solid #1a1a1a;
+            box-shadow:
+                inset 0 0 20px rgba(0, 0, 0, 0.9),
+                0 4px 10px rgba(0, 0, 0, 0.5);
+            filter: grayscale(100%);
+        }
+
+        #startBtn {
+            margin-top: 20px;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-family: 'Bebas Neue', sans-serif;
+            background-color: #c9a961;
+            color: #1a1a1a;
+            border: 3px solid #a88a4f;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        #startBtn:hover {
+            background-color: #d4b56f;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        #startBtn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        #startBtn:disabled {
+            background-color: #666;
+            border-color: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #status {
+            margin-top: 15px;
+            color: #c9a961;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #captureCanvas {
+            display: none;
+        }
+
+        #capturedPhoto {
+            margin-top: 30px;
+            width: 100%;
+            max-width: 360px;
+            height: auto;
+            border: 8px solid #2a2a2a;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            display: none;
+        }
+
+        #flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease-out;
+        }
+
+        #flash.active {
+            opacity: 1;
+            transition: none;
+        }
+
+        #countdown {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 120px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            display: none;
+            z-index: 1000;
+        }
+
+        #actions {
+            margin-top: 20px;
+            display: none;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        #actions button {
+            padding: 12px 30px;
+            font-size: 16px;
+            font-family: 'Bebas Neue', sans-serif;
+            background-color: #c9a961;
+            color: #1a1a1a;
+            border: 3px solid #a88a4f;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #actions button:hover {
+            background-color: #d4b56f;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        #actions button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Mobile responsive adjustments */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            h1 {
+                letter-spacing: 2px;
+                margin-bottom: 15px;
+            }
+
+            #videoContainer {
+                padding: 15px;
+            }
+
+            #webcam {
+                border: 4px solid #1a1a1a;
+            }
+
+            #startBtn {
+                padding: 12px 30px;
+                font-size: 16px;
+                letter-spacing: 1px;
+            }
+
+            #status {
+                font-size: 12px;
+            }
+
+            #countdown {
+                font-size: 80px;
+            }
+
+            #actions button {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+
+            #capturedPhoto {
+                border: 4px solid #2a2a2a;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Fotoautomat</h1>
+
+    <div id="videoContainer">
+        <video id="webcam" autoplay playsinline></video>
+        <br>
+        <button id="startBtn">Start</button>
+        <div id="status"></div>
+    </div>
+
+    <canvas id="captureCanvas"></canvas>
+    <img id="capturedPhoto" alt="Captured photo">
+
+    <div id="actions">
+        <button id="downloadBtn">Download</button>
+    </div>
+
+    <div id="flash"></div>
+    <div id="countdown"></div>
+
+    <script>
+        const video = document.getElementById('webcam');
+        const startBtn = document.getElementById('startBtn');
+        const status = document.getElementById('status');
+        const canvas = document.getElementById('captureCanvas');
+        const capturedPhoto = document.getElementById('capturedPhoto');
+        const flash = document.getElementById('flash');
+        const countdown = document.getElementById('countdown');
+        const actions = document.getElementById('actions');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const ctx = canvas.getContext('2d');
+
+        let stream = null;
+        let capturedPhotos = [];
+        let photoStripData = null;
+
+        // Access webcam
+        async function initWebcam() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: 480,
+                        height: 640
+                    },
+                    audio: false
+                });
+                video.srcObject = stream;
+                status.textContent = 'Webcam ready!';
+            } catch (err) {
+                status.textContent = 'Error accessing webcam: ' + err.message;
+                console.error('Error accessing webcam:', err);
+            }
+        }
+
+        // Apply vintage effects to canvas
+        function applyVintageEffects() {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            // Apply black & white and soft contrast
+            for (let i = 0; i < data.length; i += 4) {
+                // Convert to grayscale
+                const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+
+                // Soft contrast adjustment (reduce contrast slightly)
+                const adjusted = gray * 0.9 + 128 * 0.1;
+
+                data[i] = adjusted;     // Red
+                data[i + 1] = adjusted; // Green
+                data[i + 2] = adjusted; // Blue
+            }
+
+            // Add film grain
+            for (let i = 0; i < data.length; i += 4) {
+                const noise = (Math.random() - 0.5) * 15;
+                data[i] += noise;
+                data[i + 1] += noise;
+                data[i + 2] += noise;
+            }
+
+            // Add vignette (darker edges)
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const maxDist = Math.sqrt(centerX * centerX + centerY * centerY);
+
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const i = (y * canvas.width + x) * 4;
+                    const dist = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+                    const vignette = 1 - (dist / maxDist) * 0.8;
+
+                    data[i] *= vignette;
+                    data[i + 1] *= vignette;
+                    data[i + 2] *= vignette;
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        // Trigger flash effect
+        function triggerFlash() {
+            flash.classList.add('active');
+            setTimeout(() => {
+                flash.classList.remove('active');
+            }, 50);
+        }
+
+        // Show countdown
+        function showCountdown(seconds) {
+            return new Promise(resolve => {
+                let count = seconds;
+                countdown.style.display = 'block';
+                countdown.textContent = count;
+
+                const interval = setInterval(() => {
+                    count--;
+                    if (count > 0) {
+                        countdown.textContent = count;
+                    } else {
+                        countdown.style.display = 'none';
+                        clearInterval(interval);
+                        resolve();
+                    }
+                }, 1000);
+            });
+        }
+
+        // Capture single photo and return image data
+        function capturePhoto() {
+            // Trigger flash
+            triggerFlash();
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // Draw current video frame to canvas
+            ctx.drawImage(video, 0, 0);
+
+            // Apply vintage effects
+            applyVintageEffects();
+
+            // Return image data
+            return canvas.toDataURL('image/jpeg', 0.9);
+        }
+
+        // Generate photo strip from 4 photos
+        async function generatePhotoStrip() {
+            const stripCanvas = document.createElement('canvas');
+            const stripCtx = stripCanvas.getContext('2d');
+
+            // Get dimensions from actual captured canvas, scaled to max 300px wide
+            const maxWidth = 300;
+            const scale = Math.min(1, maxWidth / canvas.width);
+            const photoWidth = Math.floor(canvas.width * scale);
+            const photoHeight = Math.floor(canvas.height * scale);
+            const lineWidth = 3;
+            const stripPadding = 10;
+
+            stripCanvas.width = photoWidth + (stripPadding * 2);
+            stripCanvas.height = (photoHeight * 4) + (lineWidth * 3) + (stripPadding * 2);
+
+            // Fill with black background
+            stripCtx.fillStyle = '#000000';
+            stripCtx.fillRect(0, 0, stripCanvas.width, stripCanvas.height);
+
+            // Draw rounded rectangle for the strip
+            const drawRoundedRect = (x, y, width, height, radius) => {
+                stripCtx.beginPath();
+                stripCtx.moveTo(x + radius, y);
+                stripCtx.lineTo(x + width - radius, y);
+                stripCtx.quadraticCurveTo(x + width, y, x + width, y + radius);
+                stripCtx.lineTo(x + width, y + height - radius);
+                stripCtx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+                stripCtx.lineTo(x + radius, y + height);
+                stripCtx.quadraticCurveTo(x, y + height, x, y + height - radius);
+                stripCtx.lineTo(x, y + radius);
+                stripCtx.quadraticCurveTo(x, y, x + radius, y);
+                stripCtx.closePath();
+            };
+
+            // Clip to rounded rectangle
+            drawRoundedRect(0, 0, stripCanvas.width, stripCanvas.height, 10);
+            stripCtx.clip();
+
+            // Fill background again after clipping
+            stripCtx.fillStyle = '#000000';
+            stripCtx.fillRect(0, 0, stripCanvas.width, stripCanvas.height);
+
+            // Load and draw each photo
+            for (let index = 0; index < capturedPhotos.length; index++) {
+                const img = new Image();
+                await new Promise(resolve => {
+                    img.onload = resolve;
+                    img.src = capturedPhotos[index];
+                });
+
+                const y = stripPadding + (index * (photoHeight + lineWidth));
+                stripCtx.drawImage(img, stripPadding, y, photoWidth, photoHeight);
+
+                // Draw white line separator after each photo (except the last one)
+                if (index < capturedPhotos.length - 1) {
+                    stripCtx.fillStyle = '#ffffff';
+                    stripCtx.fillRect(stripPadding, y + photoHeight, photoWidth, lineWidth);
+                }
+            }
+
+            return stripCanvas.toDataURL('image/jpeg', 0.95);
+        }
+
+        // Take 4 photos in sequence
+        async function startPhotoSequence() {
+            capturedPhotos = [];
+            capturedPhoto.style.display = 'none';
+            startBtn.disabled = true;
+
+            for (let i = 0; i < 4; i++) {
+                status.textContent = `Photo ${i + 1} of 4`;
+
+                // Show 3-second countdown
+                await showCountdown(3);
+
+                // Capture photo
+                const photoData = capturePhoto();
+                capturedPhotos.push(photoData);
+
+                // Short pause before next photo (except after last one)
+                if (i < 3) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+
+            status.textContent = 'Creating photo strip...';
+
+            // Generate strip
+            photoStripData = await generatePhotoStrip();
+
+            // Display the photo strip
+            capturedPhoto.src = photoStripData;
+            capturedPhoto.style.display = 'block';
+
+            // Show action buttons
+            actions.style.display = 'flex';
+
+            status.textContent = 'Photo strip ready!';
+            startBtn.disabled = false;
+        }
+
+        // Download photo strip
+        function downloadPhotoStrip() {
+            const link = document.createElement('a');
+            link.download = 'photobooth-strip.jpg';
+            link.href = photoStripData;
+            link.click();
+        }
+
+        // Initialize webcam when page loads
+        window.addEventListener('load', initWebcam);
+
+        // Start photo sequence when Start button is clicked
+        startBtn.addEventListener('click', () => {
+            startPhotoSequence();
+        });
+
+        // Download button
+        downloadBtn.addEventListener('click', () => {
+            downloadPhotoStrip();
+        });
+    </script>
+</body>
+</html>
